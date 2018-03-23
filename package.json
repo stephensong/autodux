@@ -8,6 +8,7 @@
   "scripts": {
     "lint": "eslint src && echo 'lint finished.'",
     "test": "node src/test.js | tap-colorize && npm run -s lint",
+    "test2": "node src/test2.js | tap-colorize",
     "debug": "echo 'open debugger: chrome://inspect' && node --inspect-brk src/test.js",
     "watch": "watch 'clear && npm run -s test' src",
     "prepare": "npm run test -s && prepublish"
@@ -35,6 +36,7 @@
     "watch": "1.0.2"
   },
   "dependencies": {
-    "lodash.curry": "4.1.1"
+    "lodash.curry": "4.1.1",
+    "riteway": "^2.0.3"
   }
 }
