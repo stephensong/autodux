@@ -222,140 +222,119 @@ describe('autodux().selectors', async should => {
       expected: initial
     });
   }
+
+  {
+    const { getStore } = createDux().selectors;
+
+    assert({
+      given: 'a store',
+      should: 'pass entire store as a second parameter to selectors',
+      actual: getStore({ counter: 3, foo: 'bar' }),
+      expected: { counter: 3, foo: 'bar' }
+    });
+  }
 });
 
-/*
+describe('autodux() action creators', async should => {
+  const { assert } = should();
 
-test('autodux().selectors', assert => {
-  const msg = 'should pass entire store as a second parameter to selectors';
-  const { getStore } = createDux().selectors;
+  {
+    const value = 'UserName';
+    const { actions } = autodux({
+      slice: 'emptyCreator',
+      actions: {
+        nothing: {
+          reducer: x => x
+        }
+      }
+    });
 
-  const actual = getStore({ counter: 3, foo: 'bar' });
-  const expected = { counter: 3, foo: 'bar' };
+    const expected = {
+      type: 'emptyCreator/nothing',
+      payload: value
+    };
 
-  assert.same(actual, expected, msg);
-  assert.end();
-});
+    assert({
+      given: 'a value',
+      should: 'default missing reducer to spread payload into state',
+      actual: actions.nothing(value),
+      expected
+    });
+  }
 
-test('autodux() action creators', assert => {
-  const msg = 'should default missing action creators to identity';
+  {
+    const initial = { a: 'a' };
 
-  const value = 'UserName';
-  const { actions } = autodux({
-    slice: 'emptyCreator',
-    actions: {
-      nothing: {
+    const { reducer } = autodux({
+      initial,
+      actions: {
         reducer: x => x
       }
-    }
-  });
+    });
 
-  const actual = actions.nothing(value);
-  const expected = {
-    type: 'emptyCreator/nothing',
-    payload: value
-  };
+    assert({
+      given: 'a value',
+      should: 'return valid default state',
+      actual: reducer(),
+      expected: initial
+    });
+  }
 
-  assert.same(actual, expected, msg);
-  assert.end();
-});
+  {
 
-test('autodux() action creators', assert => {
-  const msg =
-    'should default missing reducer to spread payload into state';
-
-  const { actions, reducer } = autodux({
-    slice: 'emptyCreator',
-    initial: {c: 'c'},
-    actions: {
-      nothing: {
-        create: () => ({a: 'a', b: 'b'})
+    const {
+      reducer,
+      actions: {
+        increment,
+        decrement,
+        multiply
+      },
+      selectors: {
+        getValue
       }
-    }
-  });
+    } = autodux({
+      // the slice of state your reducer controls
+      slice: 'counter',
 
-  const actual = reducer(undefined, actions.nothing());
-  const expected = {
-    a: 'a',
-    b: 'b',
-    c: 'c'
-  };
+      // The initial value of your reducer state
+      initial: 0,
 
-  assert.same(actual, expected, msg);
-  assert.end();
-});
+      // No need to implement switching logic -- it's
+      // done for you.
+      actions: {
+        increment: state => state + 1,
+        decrement: state => state - 1,
+        multiply: {
+          create: ({ by }) => by,
+          reducer: (state, payload) => state * payload
+        }
+      },
 
-test('Calling the reducer with no arguments', assert => {
-  const msg = 'Should return valid default state';
-  const initial = { a: 'a' };
-  const { reducer } = autodux({
-    initial,
-    actions: {
-      reducer: x => x
-    }
-  });
-  const actual = reducer();
-  const expected = initial;
-
-  assert.same(actual, expected, msg);
-  assert.end();
-});
-
-test('Functions as action values', assert => {
-  const msg = 'should use function as a reducer';
-
-  const {
-    reducer,
-    actions: {
-      increment,
-      decrement,
-      multiply
-    },
-    selectors: {
-      getValue
-    }
-  } = autodux({
-    // the slice of state your reducer controls
-    slice: 'counter',
-
-    // The initial value of your reducer state
-    initial: 0,
-
-    // No need to implement switching logic -- it's
-    // done for you.
-    actions: {
-      increment: state => state + 1,
-      decrement: state => state - 1,
-      multiply: {
-        create: ({ by }) => by,
-        reducer: (state, payload) => state * payload
+      // No need to select the state slice -- it's done for you.
+      selectors: {
+        getValue: id
       }
-    },
+    });
 
-    // No need to select the state slice -- it's done for you.
-    selectors: {
-      getValue: id
-    }
-  });
+    const state = [
+      increment(),
+      increment(),
+      increment(),
+      decrement(),
+      multiply({ by: 2 })
+    ].reduce(reducer, undefined);
 
-  const state = [
-    increment(),
-    increment(),
-    increment(),
-    decrement(),
-    multiply({ by: 2 })
-  ].reduce(reducer, undefined);
-  const actual = getValue({ counter: state });
-
-  const expected = 4;
-
-  assert.same(actual, expected, msg);
-  assert.end();
+    assert({
+      given: 'a value',
+      should: 'use function as a reducer',
+      actual: getValue({ counter: state }),
+      expected: 4
+    });
+  }
 });
 
-test('autodux/assign(key)', assert => {
-  const msg =
-    'should set the key in the state to the payload value';
+describe('autodux/assign(key)', async should => {
+  const { assert } = should();
 
   const {
     actions: {
@@ -387,69 +366,79 @@ test('autodux/assign(key)', assert => {
     avatar
   };
 
-  assert.same(actual, expected, msg);
-  assert.end();
-});
-
-test('autodux/default actions (without actions key)', assert => {
-  const msg = 'should create `set${slice}` to spread payload into state';
-
-  const {
-    actions: {
-      setUser
-    },
-    reducer
-  } = autodux({
-    slice: 'user',
-    initial: {
-      userName: 'Anonymous',
-      avatar: 'anonymous.png'
-    }
+  assert({
+    given: 'a value',
+    should: 'set the key in the state to the payload value',
+    actual,
+    expected,
   });
-  const userName = 'Foo';
-  const avatar = 'foo.png';
-
-  const actual = reducer(undefined, setUser({ userName, avatar }));
-
-  const expected = {
-    userName,
-    avatar
-  };
-
-  assert.same(actual, expected, msg);
-  assert.end();
 });
 
-test('autodux/default actions (without actions key)', assert => {
-  const msg = 'should create assign actions for each key in initial';
+describe('autodux/default actions (without actions key)', async should => {
+  const { assert } = should();
+  {
+    const {
+      actions: {
+        setUser
+      },
+      reducer
+    } = autodux({
+      slice: 'user',
+      initial: {
+        userName: 'Anonymous',
+        avatar: 'anonymous.png'
+      }
+    });
+    const userName = 'Foo';
+    const avatar = 'foo.png';
 
-  const {
-    actions: {
-      setUserName,
-      setAvatar
-    },
-    reducer
-  } = autodux({
-    slice: 'user',
-    initial: {
-      userName: 'Anonymous',
-      avatar: 'anonymous.png'
-    }
-  });
-  const userName = 'Foo';
-  const avatar = 'foo.png';
+    const actual = reducer(undefined, setUser({ userName, avatar }));
 
-  const actual = [
-    setUserName(userName),
-    setAvatar(avatar)
-  ].reduce(reducer, undefined);
+    const expected = {
+      userName,
+      avatar
+    };
 
-  const expected = {
-    userName,
-    avatar
-  };
+    assert({
+      given: 'a value',
+      should: 'create `set${slice}` to spread payload into state',
+      actual,
+      expected,
+    });
+  }
 
-  assert.same(actual, expected, msg);
-  assert.end();
+  {
+    const {
+      actions: {
+        setUserName,
+        setAvatar
+      },
+      reducer
+    } = autodux({
+      slice: 'user',
+      initial: {
+        userName: 'Anonymous',
+        avatar: 'anonymous.png'
+      }
+    });
+    const userName = 'Foo';
+    const avatar = 'foo.png';
+
+    const actual = [
+      setUserName(userName),
+      setAvatar(avatar)
+    ].reduce(reducer, undefined);
+
+    const expected = {
+      userName,
+      avatar
+    };
+
+    assert({
+      given: 'a value',
+      should: 'create assign actions for each key in initial',
+      actual,
+      expected,
+    });
+  }
 });
-*/
